@@ -60,24 +60,16 @@ function VerifyInner() {
   const returnUrl = searchParams.get("return_url");
   const personaInquiryId = searchParams.get("inquiry-id");
   const claimParam = searchParams.get("claim") as CredentialType | null;
-  const requiredClaim =
-    claimParam && VALID_CLAIMS.includes(claimParam) ? claimParam : null;
+  const requiredClaim = claimParam && VALID_CLAIMS.includes(claimParam) ? claimParam : null;
   const locked = !!requiredClaim;
 
   // Protocol-supplied proof parameters. These flow into the issued credential
   // so the witness route can use them at prove time instead of hardcoded values.
   const minThresholdParam = searchParams.get("min_threshold") ?? undefined;
   const claimParamsFromUrl = {
-    threshold_years:
-      searchParams.get("threshold_years") ??
-      (claimParam === "age" ? minThresholdParam : undefined),
-    threshold:
-      searchParams.get("threshold") ??
-      (claimParam === "funds" || claimParam === "income"
-        ? minThresholdParam
-        : undefined),
-    restricted:
-      searchParams.get("restricted")?.split(",").filter(Boolean) ?? undefined,
+    threshold_years: searchParams.get("threshold_years") ?? (claimParam === "age" ? minThresholdParam : undefined),
+    threshold: searchParams.get("threshold") ?? (claimParam === "funds" || claimParam === "income" ? minThresholdParam : undefined),
+    restricted: searchParams.get("restricted")?.split(",").filter(Boolean) ?? undefined,
   };
 
   const [selected, setSelected] = useState<CredentialType | null>(
@@ -132,31 +124,22 @@ function VerifyInner() {
     }
   }, [returnUrl]);
   const [plaidBalance, setPlaidBalance] = useState<number | null>(null);
-  const [plaidAccounts, setPlaidAccounts] = useState<
-    { name: string; available: number }[]
-  >([]);
+  const [plaidAccounts, setPlaidAccounts] = useState<{ name: string; available: number }[]>([]);
   const [plaidMock, setPlaidMock] = useState(false);
 
   const fundsSelected = selected === "funds";
   useEffect(() => {
     if (!fundsSelected) return;
     setPlaidBalance(null);
-    fetch("/api/plaid-balance", { headers: { "x-request-id": getOrCreateRequestId() } })
+    fetch("/api/plaid-balance")
       .then((r) => r.json())
-      .then(
-        (d: {
-          balance?: number;
-          accounts?: { name: string; available: number }[];
-          mock?: boolean;
-          error?: string;
-        }) => {
+      .then((d: { balance?: number; accounts?: { name: string; available: number }[]; mock?: boolean; error?: string; }) => {
           if (d.balance !== undefined) {
             setPlaidBalance(d.balance);
             setPlaidAccounts(d.accounts ?? []);
             setPlaidMock(!!d.mock);
           }
-        },
-      )
+        })
       .catch(() => {});
   }, [fundsSelected]);
 
@@ -168,32 +151,19 @@ function VerifyInner() {
     if (!raw) return;
     sessionStorage.removeItem("sc_persona_pending");
     let pending: Record<string, unknown>;
-    try {
-      pending = JSON.parse(raw);
-    } catch {
-      return;
-    }
+    try { pending = JSON.parse(raw);} catch { return; }
     setBusy(true);
     setError("");
     const requestId = getOrCreateRequestId();
     fetch("/api/issue", {
-      method: "POST",
-<<<<<<< HEAD
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...pending,
-        persona_inquiry_id: personaInquiryId,
-      }),
-=======
+       method: "POST",
       headers: { "Content-Type": "application/json", "x-request-id": requestId },
       body: JSON.stringify({ ...pending, persona_inquiry_id: personaInquiryId }),
->>>>>>> 24ec0ce66dad92aeb78629044c3cfcd11e82ccc8
     })
       .then(async (res) => {
         if (!res.ok) {
           const d = (await res.json().catch(() => null)) as {
-            error?: string;
-          } | null;
+            error?: string;} | null;
           throw new Error(
             d?.error ?? "Issuing failed after identity verification",
           );
@@ -218,7 +188,7 @@ function VerifyInner() {
       })
       .catch((e) => {
         const message = (e as Error).message;
-        setError(`${message} (ref: ${requestId})`);
+        setError(message);
         toast.error(`Credential issuance failed: ${message}`);
       })
       .finally(() => setBusy(false));
@@ -278,7 +248,6 @@ function VerifyInner() {
     if (!address || !selected) return;
     setBusy(true);
     setError("");
-    const requestId = getOrCreateRequestId();
     try {
       if (!DEMO_ISSUER_ID) {
         throw new Error(
@@ -296,7 +265,7 @@ function VerifyInner() {
       };
       const res = await fetch("/api/issue", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-request-id": requestId },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...payload,
           returnUrl: returnUrl ?? undefined,
@@ -311,8 +280,7 @@ function VerifyInner() {
       }
       if (!res.ok) {
         const data = (await res.json().catch(() => null)) as {
-          error?: string;
-        } | null;
+          error?: string} | null;
         throw new Error(data?.error ?? "Issuing failed");
       }
       const { credentials } = (await res.json()) as {
@@ -331,7 +299,7 @@ function VerifyInner() {
       setTimeout(redirectAfterIssue, 1500);
     } catch (e) {
       const message = (e as Error).message;
-      setError(`${message} (ref: ${requestId})`);
+      setError(message);
       toast.error(`Credential issuance failed: ${message}`);
     } finally {
       setBusy(false);
@@ -457,7 +425,7 @@ function VerifyInner() {
                   return (
                     <div
                       key={key}
-                      tabIndex={0}
+                      tabIndex={locked ? -1 : 0}
                       onClick={() => {
                         if (!locked) setSelected(key);
                       }}
