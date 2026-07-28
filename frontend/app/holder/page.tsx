@@ -61,7 +61,8 @@ function proofStatus(cred: Credential): "unproved" | "proved" | "expired" {
 
 function daysRemaining(cred: Credential): number {
   if (!cred.provedAt) return 0;
-  const secsLeft = cred.provedAt + credTtlSecs(cred) - Math.floor(Date.now() / 1000);
+  const secsLeft =
+    cred.provedAt + credTtlSecs(cred) - Math.floor(Date.now() / 1000);
   return Math.max(0, Math.ceil(secsLeft / 86_400));
 }
 
@@ -88,10 +89,20 @@ function CredCard({
         {/* left: credential info */}
         <div style={{ minWidth: 0 }}>
           <div className="row" style={{ gap: "0.5rem", flexWrap: "wrap" }}>
-            <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>{c.title}</span>
-            <span className="mono faint" style={{ fontSize: "0.7rem" }}>{c.claim}</span>
+            <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>
+              {c.title}
+            </span>
+            <span className="mono faint" style={{ fontSize: "0.7rem" }}>
+              {c.claim}
+            </span>
           </div>
-          <div style={{ fontSize: "0.75rem", color: "var(--faint)", marginTop: "0.15rem" }}>
+          <div
+            style={{
+              fontSize: "0.75rem",
+              color: "var(--faint)",
+              marginTop: "0.15rem",
+            }}
+          >
             {c.issuer} · <span>{truncateHash(c.commitment)}</span>
             {status === "proved" && (
               <>
@@ -106,16 +117,28 @@ function CredCard({
                       href={EXPLORER_TX(c.provedTxHash)}
                       target="_blank"
                       rel="noreferrer"
-                      style={{ color: "inherit", display: "inline-flex", alignItems: "center", gap: "0.15rem" }}
+                      style={{
+                        color: "inherit",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.15rem",
+                      }}
                     >
-                      {c.provedTxHash.slice(0, 6)}…<IconExternalLink size={10} />
+                      {c.provedTxHash.slice(0, 6)}…
+                      <IconExternalLink size={10} />
                     </a>
                   </>
                 )}
               </>
             )}
             {status === "expired" && (
-              <> · <span style={{ color: "var(--danger)", opacity: 0.8 }}>expired</span></>
+              <>
+                {" "}
+                ·{" "}
+                <span style={{ color: "var(--danger)", opacity: 0.8 }}>
+                  expired
+                </span>
+              </>
             )}
           </div>
         </div>
@@ -123,17 +146,25 @@ function CredCard({
         {/* right: badges + button + trash */}
         <div className="card-actions">
           {isPreview && <Badge variant="pending">Preview</Badge>}
-          <Badge variant="verified" dot={false}>Held</Badge>
-          {status === "proved" && <Badge variant="verified" dot={false}>On-chain</Badge>}
+          <Badge variant="verified" dot={false}>
+            Held
+          </Badge>
+          {status === "proved" && (
+            <Badge variant="verified" dot={false}>
+              On-chain
+            </Badge>
+          )}
           <button
             className={`btn btn-sm ${status === "proved" ? "btn-secondary" : "btn-primary"}`}
             disabled={!address}
             title={!address ? "Connect a wallet first" : undefined}
             onClick={onProve}
           >
-            {status === "proved"  ? "Re-prove" :
-             status === "expired" ? "Re-prove" :
-                                    "Generate proof"}
+            {status === "proved"
+              ? "Re-prove"
+              : status === "expired"
+                ? "Re-prove"
+                : "Generate proof"}
           </button>
           <button
             className="btn btn-ghost btn-sm"
@@ -196,7 +227,7 @@ export default function HolderPage() {
 
   const displayCreds = isPreview ? PREVIEW_CREDENTIALS : creds;
   const unproved = displayCreds.filter((c) => proofStatus(c) !== "proved");
-  const proved   = displayCreds.filter((c) => proofStatus(c) === "proved");
+  const proved = displayCreds.filter((c) => proofStatus(c) === "proved");
 
   // Credentials eligible for "Prove all" (unproved or expired), capped at 5.
   // Deduplicate by type: the contract writes one slot per (holder, credential_type),
@@ -211,7 +242,9 @@ export default function HolderPage() {
       <div className="between" style={{ marginBottom: "2.5rem" }}>
         <div>
           <span className="eyebrow">Holder</span>
-          <h1 style={{ fontSize: "2rem", marginTop: "0.35rem" }}>Your credentials</h1>
+          <h1 style={{ fontSize: "2rem", marginTop: "0.35rem" }}>
+            Your credentials
+          </h1>
         </div>
         <WalletButton />
       </div>
@@ -242,36 +275,53 @@ export default function HolderPage() {
       )}
 
       {view.kind === "single" ? (
-
         <ProofFlow
           cred={view.cred}
           holder={address}
           onBack={() => setView({ kind: "list" })}
-          onProved={(txHash) => setCreds(markProved(view.cred.commitment, txHash))}
+          onProved={(txHash) =>
+            setCreds(markProved(view.cred.commitment, txHash))
+          }
         />
       ) : view.kind === "batch" ? (
         <BatchProofFlow
           creds={view.creds}
           holder={address}
           onBack={() => setView({ kind: "list" })}
-          onProved={(txHash, commitments) => setCreds(markAllProved(commitments, txHash))}
+          onProved={(txHash, commitments) =>
+            setCreds(markAllProved(commitments, txHash))
+          }
         />
       ) : (
         <div className="stack reveal" style={{ gap: "1.5rem" }}>
-
           {/* ── Empty state ── */}
           {creds.length === 0 && !importing && (
             <div
               className="card"
-              style={{ textAlign: "center", padding: "3.5rem 1.5rem", borderStyle: "dashed" }}
+              style={{
+                textAlign: "center",
+                padding: "3.5rem 1.5rem",
+                borderStyle: "dashed",
+              }}
             >
               <IconCertificate size={30} stroke={1.3} color="var(--faint)" />
               <h3 style={{ margin: "1rem 0 0.4rem" }}>No credentials yet</h3>
-              <p className="muted" style={{ fontSize: "0.875rem", maxWidth: 340, margin: "0 auto 1.5rem" }}>
+              <p
+                className="muted"
+                style={{
+                  fontSize: "0.875rem",
+                  maxWidth: 340,
+                  margin: "0 auto 1.5rem",
+                }}
+              >
                 Get a credential from a trusted issuer, then generate a
                 zero-knowledge proof to verify it on-chain.
               </p>
-              <a href="/verify" className="btn btn-primary btn-sm" style={{ display: "inline-flex" }}>
+              <a
+                href="/verify"
+                className="btn btn-primary btn-sm"
+                style={{ display: "inline-flex" }}
+              >
                 Get a credential
                 <IconArrowRight size={14} />
               </a>
@@ -305,7 +355,9 @@ export default function HolderPage() {
                     display: "inline-flex",
                     alignItems: "center",
                   }}
-                  onClick={() => setView({ kind: "batch", creds: batchCandidates })}
+                  onClick={() =>
+                    setView({ kind: "batch", creds: batchCandidates })
+                  }
                 >
                   <IconStack2 size={15} />
                   Prove all ({batchCandidates.length}) in one transaction
@@ -339,7 +391,10 @@ export default function HolderPage() {
 
           {importing ? (
             <ImportPanel
-              onImport={(c) => { setCreds(saveCredential(c)); setImporting(false); }}
+              onImport={(c) => {
+                setCreds(saveCredential(c));
+                setImporting(false);
+              }}
               onCancel={() => setImporting(false)}
             />
           ) : (
@@ -360,13 +415,22 @@ export default function HolderPage() {
 
 // ── Import panel ──────────────────────────────────────────────────────────────
 
-function ImportPanel({ onImport, onCancel }: { onImport: (c: Credential) => void; onCancel: () => void }) {
+function ImportPanel({
+  onImport,
+  onCancel,
+}: {
+  onImport: (c: Credential) => void;
+  onCancel: () => void;
+}) {
   const [json, setJson] = useState("");
   const [error, setError] = useState("");
 
   function onAdd() {
-    try { onImport(parseCredential(json)); }
-    catch (e) { setError((e as Error).message); }
+    try {
+      onImport(parseCredential(json));
+    } catch (e) {
+      setError((e as Error).message);
+    }
   }
 
   return (
@@ -379,10 +443,28 @@ function ImportPanel({ onImport, onCancel }: { onImport: (c: Credential) => void
         onChange={(e) => setJson(e.target.value)}
         style={{ marginTop: "0.75rem" }}
       />
-      {error && <p style={{ color: "var(--danger)", fontSize: "0.8125rem", marginTop: "0.5rem" }}>{error}</p>}
+      {error && (
+        <p
+          style={{
+            color: "var(--danger)",
+            fontSize: "0.8125rem",
+            marginTop: "0.5rem",
+          }}
+        >
+          {error}
+        </p>
+      )}
       <div className="row" style={{ marginTop: "1rem", gap: "0.6rem" }}>
-        <button className="btn btn-primary btn-sm" onClick={onAdd} disabled={!json.trim()}>Add credential</button>
-        <button className="btn btn-ghost btn-sm" onClick={onCancel}>Cancel</button>
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={onAdd}
+          disabled={!json.trim()}
+        >
+          Add credential
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={onCancel}>
+          Cancel
+        </button>
       </div>
     </div>
   );
@@ -390,7 +472,13 @@ function ImportPanel({ onImport, onCancel }: { onImport: (c: Credential) => void
 
 // ── ProofFlow ─────────────────────────────────────────────────────────────────
 
-type Stage = "witness" | "proving" | "generated" | "submitting" | "confirmed" | "error";
+type Stage =
+  | "witness"
+  | "proving"
+  | "generated"
+  | "submitting"
+  | "confirmed"
+  | "error";
 
 function ProofFlow({
   cred,
@@ -404,13 +492,19 @@ function ProofFlow({
   onProved: (txHash: string) => void;
 }) {
   const [stage, setStage] = useState<Stage>("witness");
-  const [proof, setProof] = useState<{ proof: Uint8Array; publicInputs: Uint8Array } | null>(null);
+  const [proof, setProof] = useState<{
+    proof: Uint8Array;
+    publicInputs: Uint8Array;
+  } | null>(null);
   const [txHash, setTxHash] = useState("");
   const [error, setError] = useState<ContractError | null>(null);
   const [showRaw, setShowRaw] = useState(false);
   // elapsed time for the proving stage
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
+  const successRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
   const { networkMismatch } = useWallet();
 
@@ -434,10 +528,7 @@ function ProofFlow({
           1000,
         );
 
-        const result = await proveWithBackend(
-          cred.type,
-          witness,
-        );
+        const result = await proveWithBackend(cred.type, witness);
         clearInterval(timerRef.current!);
         if (cancelled) return;
 
@@ -460,6 +551,21 @@ function ProofFlow({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cred]);
+  useEffect(() => {
+    switch (stage) {
+      case "generated":
+        submitButtonRef.current?.focus();
+        break;
+
+      case "confirmed":
+        successRef.current?.focus();
+        break;
+
+      case "error":
+        errorRef.current?.focus();
+        break;
+    }
+  }, [stage]);
 
   async function onSubmit() {
     if (!proof || networkMismatch) return;
@@ -477,7 +583,9 @@ function ProofFlow({
       setTxHash(hash);
       onProved(hash);
       setStage("confirmed");
-      toast.success(`Proof confirmed on-chain for ${cred.title}`, { txHash: hash });
+      toast.success(`Proof confirmed on-chain for ${cred.title}`, {
+        txHash: hash,
+      });
     } catch (e) {
       const parsed = parseContractError((e as Error).message);
       setError(parsed);
@@ -486,12 +594,17 @@ function ProofFlow({
     }
   }
 
-  const proofDone = stage === "generated" || stage === "submitting" || stage === "confirmed";
+  const proofDone =
+    stage === "generated" || stage === "submitting" || stage === "confirmed";
   const submitDone = stage === "confirmed";
 
   return (
     <div className="reveal" style={{ maxWidth: 520, margin: "0 auto" }}>
-      <button className="btn btn-ghost btn-sm" onClick={onBack} style={{ marginBottom: "1.5rem" }}>
+      <button
+        className="btn btn-ghost btn-sm"
+        onClick={onBack}
+        style={{ marginBottom: "1.5rem" }}
+      >
         <IconArrowLeft size={14} />
         All credentials
       </button>
@@ -499,11 +612,16 @@ function ProofFlow({
       <div className="card" style={{ padding: "1.75rem" }}>
         {/* credential header */}
         <div style={{ marginBottom: "1.5rem" }}>
-          <span className="eyebrow" style={{ marginBottom: "0.5rem", display: "block" }}>
+          <span
+            className="eyebrow"
+            style={{ marginBottom: "0.5rem", display: "block" }}
+          >
             Proving
           </span>
           <h2 style={{ marginBottom: "0.25rem" }}>{cred.title}</h2>
-          <span className="mono faint" style={{ fontSize: "0.8rem" }}>{cred.claim}</span>
+          <span className="mono faint" style={{ fontSize: "0.8rem" }}>
+            {cred.claim}
+          </span>
         </div>
 
         {/* step list */}
@@ -513,11 +631,16 @@ function ProofFlow({
             title="Compute witness"
             subtitle="Poseidon2 · secp256k1 · server-side Noir execution"
             state={
-              stage === "witness"  ? "active" :
-              stage === "error"    ? "idle"   : "done"
+              stage === "witness"
+                ? "active"
+                : stage === "error"
+                  ? "idle"
+                  : "done"
             }
             detail={
-              stage === "witness" ? <AnimatedDots text="Running circuit on server" /> : null
+              stage === "witness" ? (
+                <AnimatedDots text="Running circuit on server" />
+              ) : null
             }
           />
 
@@ -525,19 +648,34 @@ function ProofFlow({
             icon={<IconCpu size={14} stroke={1.8} />}
             title="UltraHonk proof"
             subtitle="BN254 · keccak transcript · browser WASM"
-            state={
-              stage === "proving"  ? "active" :
-              proofDone            ? "done"   : "idle"
-            }
+            state={stage === "proving" ? "active" : proofDone ? "done" : "idle"}
             detail={
               stage === "proving" ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "0.65rem" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.5rem",
+                    marginTop: "0.65rem",
+                  }}
+                >
                   <ProvingBar />
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <span
+                      style={{ fontSize: "0.75rem", color: "var(--muted)" }}
+                    >
                       Generating proof in browser…
                     </span>
-                    <span className="mono" style={{ fontSize: "0.72rem", color: "var(--faint)" }}>
+                    <span
+                      className="mono"
+                      style={{ fontSize: "0.72rem", color: "var(--faint)" }}
+                    >
                       {elapsed}s
                     </span>
                   </div>
@@ -547,10 +685,16 @@ function ProofFlow({
                 </div>
               ) : proofDone && proof ? (
                 <div style={{ marginTop: "0.4rem" }}>
-                  <span className="mono" style={{ fontSize: "0.75rem", color: "var(--accent)" }}>
+                  <span
+                    className="mono"
+                    style={{ fontSize: "0.75rem", color: "var(--accent)" }}
+                  >
                     π {truncateHash("0x" + toHex(proof.proof))}
                   </span>
-                  <span className="mono faint" style={{ fontSize: "0.72rem", marginLeft: "0.5rem" }}>
+                  <span
+                    className="mono faint"
+                    style={{ fontSize: "0.72rem", marginLeft: "0.5rem" }}
+                  >
                     {proof.proof.length.toLocaleString()} bytes
                   </span>
                 </div>
@@ -563,17 +707,23 @@ function ProofFlow({
             title="Submit to Stellar"
             subtitle="ProofRegistry.submit_proof · Freighter signature"
             state={
-              stage === "submitting" ? "active" :
-              submitDone             ? "done"   : "idle"
+              stage === "submitting" ? "active" : submitDone ? "done" : "idle"
             }
             last
             detail={
               stage === "submitting" ? (
-                <AnimatedDots text="Writing to ProofRegistry" style={{ marginTop: "0.35rem" }} />
+                <AnimatedDots
+                  text="Writing to ProofRegistry"
+                  style={{ marginTop: "0.35rem" }}
+                />
               ) : submitDone ? (
                 <div
                   className="row"
-                  style={{ gap: "0.5rem", marginTop: "0.3rem", alignItems: "center" }}
+                  style={{
+                    gap: "0.5rem",
+                    marginTop: "0.3rem",
+                    alignItems: "center",
+                  }}
                 >
                   <a
                     href={EXPLORER_TX(txHash)}
@@ -602,6 +752,7 @@ function ProofFlow({
             )}
             <button
               className="btn btn-primary"
+              ref={submitButtonRef}
               style={{
                 marginTop: networkMismatch ? 0 : "1.5rem",
                 width: "100%",
@@ -610,7 +761,11 @@ function ProofFlow({
               }}
               onClick={onSubmit}
               disabled={networkMismatch}
-              title={networkMismatch ? "Switch your wallet to the correct network to submit" : undefined}
+              title={
+                networkMismatch
+                  ? "Switch your wallet to the correct network to submit"
+                  : undefined
+              }
             >
               Submit to Stellar
               <IconArrowRight size={15} />
@@ -620,6 +775,9 @@ function ProofFlow({
 
         {stage === "error" && error && (
           <div
+            ref={errorRef}
+            tabIndex={-1}
+            role="alert"
             style={{
               marginTop: "1.5rem",
               padding: "0.9rem 1.1rem",
@@ -628,11 +786,28 @@ function ProofFlow({
               background: "rgba(240,96,77,0.06)",
             }}
           >
-            <div className="row" style={{ gap: "0.5rem", color: "var(--danger)", fontWeight: 600, fontSize: "0.875rem" }}>
+            <div
+              className="row"
+              style={{
+                gap: "0.5rem",
+                color: "var(--danger)",
+                fontWeight: 600,
+                fontSize: "0.875rem",
+              }}
+            >
               <IconAlertTriangle size={15} />
-              {error.code !== null ? `Contract error #${error.code}` : "Could not complete"}
+              {error.code !== null
+                ? `Contract error #${error.code}`
+                : "Could not complete"}
             </div>
-            <div style={{ fontSize: "0.8125rem", marginTop: "0.45rem", lineHeight: 1.65, color: "var(--text)" }}>
+            <div
+              style={{
+                fontSize: "0.8125rem",
+                marginTop: "0.45rem",
+                lineHeight: 1.65,
+                color: "var(--text)",
+              }}
+            >
               {error.friendly}
             </div>
             {error.raw !== error.friendly && (
@@ -640,7 +815,11 @@ function ProofFlow({
                 <button
                   className="btn btn-ghost btn-sm"
                   onClick={() => setShowRaw((v) => !v)}
-                  style={{ fontSize: "0.72rem", padding: "0.2rem 0.5rem", color: "var(--faint)" }}
+                  style={{
+                    fontSize: "0.72rem",
+                    padding: "0.2rem 0.5rem",
+                    color: "var(--faint)",
+                  }}
                 >
                   {showRaw ? "Hide" : "Show"} raw error
                 </button>
@@ -671,6 +850,10 @@ function ProofFlow({
 
         {stage === "confirmed" && (
           <div
+            ref={successRef}
+            tabIndex={-1}
+            role="status"
+            aria-live="polite"
             className="reveal"
             style={{
               marginTop: "1.5rem",
@@ -685,9 +868,20 @@ function ProofFlow({
           >
             <Check size={44} run />
             <div>
-              <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>Proof verified on-chain</div>
-              <div className="muted" style={{ fontSize: "0.8375rem", marginTop: "0.25rem", lineHeight: 1.5 }}>
-                Your claim is live on Stellar for {Math.round(credTtlSecs(cred) / 86_400)} days — without revealing the data behind it.
+              <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>
+                Proof verified on-chain
+              </div>
+              <div
+                className="muted"
+                style={{
+                  fontSize: "0.8375rem",
+                  marginTop: "0.25rem",
+                  lineHeight: 1.5,
+                }}
+              >
+                Your claim is live on Stellar for{" "}
+                {Math.round(credTtlSecs(cred) / 86_400)} days — without
+                revealing the data behind it.
               </div>
             </div>
           </div>
@@ -720,8 +914,8 @@ function BatchProofFlow({
   onBack: () => void;
   onProved: (txHash: string, commitments: string[]) => void;
 }) {
-  const [credStates, setCredStates] = useState<CredProofState[]>(
-    () => creds.map(() => ({ status: "pending" as const })),
+  const [credStates, setCredStates] = useState<CredProofState[]>(() =>
+    creds.map(() => ({ status: "pending" as const })),
   );
   const [batchStage, setBatchStage] = useState<BatchStage>("generating");
   const [txHash, setTxHash] = useState("");
@@ -729,15 +923,19 @@ function BatchProofFlow({
   const [showRaw, setShowRaw] = useState(false);
   const toast = useToast();
   const { networkMismatch } = useWallet();
-  const generatedProofs = useRef<Array<{ proof: Uint8Array; publicInputs: Uint8Array } | null>>(
-    creds.map(() => null),
-  );
+  const generatedProofs = useRef<
+    Array<{ proof: Uint8Array; publicInputs: Uint8Array } | null>
+  >(creds.map(() => null));
   // Stable refs so the submission effect always reads the latest values
   // even if the parent re-renders between proof generation and submission.
   const credsRef = useRef(creds);
   const holderRef = useRef(holder);
-  useEffect(() => { credsRef.current = creds; }, [creds]);
-  useEffect(() => { holderRef.current = holder; }, [holder]);
+  useEffect(() => {
+    credsRef.current = creds;
+  }, [creds]);
+  useEffect(() => {
+    holderRef.current = holder;
+  }, [holder]);
 
   // Generate proofs for all credentials in sequence.
   useEffect(() => {
@@ -758,7 +956,10 @@ function BatchProofFlow({
 
         let witness: Uint8Array;
         try {
-          witness = await computeWitness(cred.type, cred as unknown as Record<string, unknown>);
+          witness = await computeWitness(
+            cred.type,
+            cred as unknown as Record<string, unknown>,
+          );
         } catch (e) {
           if (cancelled) return;
           setCredStates((prev) => {
@@ -769,7 +970,9 @@ function BatchProofFlow({
           setBatchStage("error");
           const parsed = parseContractError((e as Error).message);
           setBatchError(parsed);
-          toast.error(`Proof generation failed for ${cred.title}: ${parsed.friendly}`);
+          toast.error(
+            `Proof generation failed for ${cred.title}: ${parsed.friendly}`,
+          );
           return;
         }
 
@@ -781,7 +984,10 @@ function BatchProofFlow({
           setCredStates((prev) => {
             const next = [...prev];
             if (next[i].status === "proving") {
-              next[i] = { status: "proving", elapsed: Math.floor((Date.now() - start) / 1000) };
+              next[i] = {
+                status: "proving",
+                elapsed: Math.floor((Date.now() - start) / 1000),
+              };
             }
             return next;
           });
@@ -806,7 +1012,9 @@ function BatchProofFlow({
           setBatchStage("error");
           const parsed = parseContractError((e as Error).message);
           setBatchError(parsed);
-          toast.error(`Proof generation failed for ${cred.title}: ${parsed.friendly}`);
+          toast.error(
+            `Proof generation failed for ${cred.title}: ${parsed.friendly}`,
+          );
           return;
         }
 
@@ -822,7 +1030,9 @@ function BatchProofFlow({
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -860,8 +1070,13 @@ function BatchProofFlow({
       .then((hash) => {
         setTxHash(hash);
         setBatchStage("confirmed");
-        onProved(hash, currentCreds.map((c) => c.commitment));
-        toast.success(`All ${currentCreds.length} proofs confirmed on-chain`, { txHash: hash });
+        onProved(
+          hash,
+          currentCreds.map((c) => c.commitment),
+        );
+        toast.success(`All ${currentCreds.length} proofs confirmed on-chain`, {
+          txHash: hash,
+        });
       })
       .catch((e) => {
         const parsed = parseContractError((e as Error).message);
@@ -878,26 +1093,41 @@ function BatchProofFlow({
 
   return (
     <div className="reveal" style={{ maxWidth: 560, margin: "0 auto" }}>
-      <button className="btn btn-ghost btn-sm" onClick={onBack} style={{ marginBottom: "1.5rem" }}>
+      <button
+        className="btn btn-ghost btn-sm"
+        onClick={onBack}
+        style={{ marginBottom: "1.5rem" }}
+      >
         <IconArrowLeft size={14} />
         All credentials
       </button>
 
       <div className="card" style={{ padding: "1.75rem" }}>
         <div style={{ marginBottom: "1.5rem" }}>
-          <span className="eyebrow" style={{ marginBottom: "0.5rem", display: "block" }}>
+          <span
+            className="eyebrow"
+            style={{ marginBottom: "0.5rem", display: "block" }}
+          >
             Batch proving
           </span>
           <h2 style={{ marginBottom: "0.25rem" }}>
             Prove all {creds.length} credentials
           </h2>
           <span className="faint" style={{ fontSize: "0.8rem" }}>
-            Proofs are generated in your browser, then submitted in a single on-chain transaction.
+            Proofs are generated in your browser, then submitted in a single
+            on-chain transaction.
           </span>
         </div>
 
         {/* Per-credential progress rows */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.75rem",
+            marginBottom: "1.5rem",
+          }}
+        >
           {creds.map((cred, i) => {
             const cs = credStates[i] ?? { status: "pending" };
             return (
@@ -916,18 +1146,22 @@ function BatchProofFlow({
           icon={<IconCloudUpload size={14} stroke={1.8} />}
           title="Submit batch to Stellar"
           subtitle={`ProofRegistry.submit_proofs_batch · ${creds.length} credentials · single Freighter signature`}
-          state={
-            isSubmitting ? "active" :
-            isConfirmed  ? "done"   : "idle"
-          }
+          state={isSubmitting ? "active" : isConfirmed ? "done" : "idle"}
           last
           detail={
             isSubmitting ? (
-              <AnimatedDots text="Writing all proofs to ProofRegistry" style={{ marginTop: "0.35rem" }} />
+              <AnimatedDots
+                text="Writing all proofs to ProofRegistry"
+                style={{ marginTop: "0.35rem" }}
+              />
             ) : isConfirmed ? (
               <div
                 className="row"
-                style={{ gap: "0.5rem", marginTop: "0.3rem", alignItems: "center" }}
+                style={{
+                  gap: "0.5rem",
+                  marginTop: "0.3rem",
+                  alignItems: "center",
+                }}
               >
                 <a
                   href={EXPLORER_TX(txHash)}
@@ -963,11 +1197,28 @@ function BatchProofFlow({
               background: "rgba(240,96,77,0.06)",
             }}
           >
-            <div className="row" style={{ gap: "0.5rem", color: "var(--danger)", fontWeight: 600, fontSize: "0.875rem" }}>
+            <div
+              className="row"
+              style={{
+                gap: "0.5rem",
+                color: "var(--danger)",
+                fontWeight: 600,
+                fontSize: "0.875rem",
+              }}
+            >
               <IconAlertTriangle size={15} />
-              {batchError.code !== null ? `Contract error #${batchError.code}` : "Batch failed"}
+              {batchError.code !== null
+                ? `Contract error #${batchError.code}`
+                : "Batch failed"}
             </div>
-            <div style={{ fontSize: "0.8125rem", marginTop: "0.45rem", lineHeight: 1.65, color: "var(--text)" }}>
+            <div
+              style={{
+                fontSize: "0.8125rem",
+                marginTop: "0.45rem",
+                lineHeight: 1.65,
+                color: "var(--text)",
+              }}
+            >
               {batchError.friendly}
             </div>
             {batchError.raw !== batchError.friendly && (
@@ -975,7 +1226,11 @@ function BatchProofFlow({
                 <button
                   className="btn btn-ghost btn-sm"
                   onClick={() => setShowRaw((v) => !v)}
-                  style={{ fontSize: "0.72rem", padding: "0.2rem 0.5rem", color: "var(--faint)" }}
+                  style={{
+                    fontSize: "0.72rem",
+                    padding: "0.2rem 0.5rem",
+                    color: "var(--faint)",
+                  }}
                 >
                   {showRaw ? "Hide" : "Show"} raw error
                 </button>
@@ -1024,8 +1279,16 @@ function BatchProofFlow({
               <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>
                 All {creds.length} proofs verified on-chain
               </div>
-              <div className="muted" style={{ fontSize: "0.8375rem", marginTop: "0.25rem", lineHeight: 1.5 }}>
-                Every credential is now live on Stellar — submitted in a single transaction.
+              <div
+                className="muted"
+                style={{
+                  fontSize: "0.8375rem",
+                  marginTop: "0.25rem",
+                  lineHeight: 1.5,
+                }}
+              >
+                Every credential is now live on Stellar — submitted in a single
+                transaction.
               </div>
             </div>
           </div>
@@ -1049,46 +1312,101 @@ function BatchCredRow({
   const isPending = state.status === "pending";
   const isWitness = state.status === "witness";
   const isProving = state.status === "proving";
-  const isReady   = state.status === "ready";
-  const isErr     = state.status === "error";
+  const isReady = state.status === "ready";
+  const isErr = state.status === "error";
 
-  const stepState: "idle" | "active" | "done" =
-    isReady ? "done" :
-    isProving || isWitness ? "active" :
-    isErr ? "idle" :
-    "idle";
+  const stepState: "idle" | "active" | "done" = isReady
+    ? "done"
+    : isProving || isWitness
+      ? "active"
+      : isErr
+        ? "idle"
+        : "idle";
 
   const detail = isWitness ? (
     <AnimatedDots text="Computing witness" style={{ marginTop: "0.25rem" }} />
   ) : isProving ? (
-    <div style={{ marginTop: "0.35rem", display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+    <div
+      style={{
+        marginTop: "0.35rem",
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.3rem",
+      }}
+    >
       <ProvingBar />
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: "0.72rem", color: "var(--muted)" }}>Generating proof in browser…</span>
-        <span className="mono" style={{ fontSize: "0.7rem", color: "var(--faint)" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <span style={{ fontSize: "0.72rem", color: "var(--muted)" }}>
+          Generating proof in browser…
+        </span>
+        <span
+          className="mono"
+          style={{ fontSize: "0.7rem", color: "var(--faint)" }}
+        >
           {(state as { status: "proving"; elapsed: number }).elapsed}s
         </span>
       </div>
     </div>
   ) : isReady ? (
     <div style={{ marginTop: "0.2rem" }}>
-      <span className="mono" style={{ fontSize: "0.72rem", color: "var(--accent)" }}>
-        π {truncateHash("0x" + toHex((state as { status: "ready"; proof: { proof: Uint8Array; publicInputs: Uint8Array } }).proof.proof))}
+      <span
+        className="mono"
+        style={{ fontSize: "0.72rem", color: "var(--accent)" }}
+      >
+        π{" "}
+        {truncateHash(
+          "0x" +
+            toHex(
+              (
+                state as {
+                  status: "ready";
+                  proof: { proof: Uint8Array; publicInputs: Uint8Array };
+                }
+              ).proof.proof,
+            ),
+        )}
       </span>
-      <span className="mono faint" style={{ fontSize: "0.7rem", marginLeft: "0.4rem" }}>
-        {(state as { status: "ready"; proof: { proof: Uint8Array; publicInputs: Uint8Array } }).proof.proof.length.toLocaleString()} bytes
+      <span
+        className="mono faint"
+        style={{ fontSize: "0.7rem", marginLeft: "0.4rem" }}
+      >
+        {(
+          state as {
+            status: "ready";
+            proof: { proof: Uint8Array; publicInputs: Uint8Array };
+          }
+        ).proof.proof.length.toLocaleString()}{" "}
+        bytes
       </span>
     </div>
   ) : isErr ? (
-    <span style={{ fontSize: "0.72rem", color: "var(--danger)", marginTop: "0.2rem", display: "block" }}>
+    <span
+      style={{
+        fontSize: "0.72rem",
+        color: "var(--danger)",
+        marginTop: "0.2rem",
+        display: "block",
+      }}
+    >
       {(state as { status: "error"; message: string }).message.slice(0, 80)}
     </span>
   ) : null;
 
-  const icon =
-    isPending ? <span style={{ fontSize: "0.65rem", color: "var(--faint)" }}>{cred.type.slice(0, 3)}</span> :
-    isErr     ? <IconAlertTriangle size={13} /> :
-                <IconCpu size={13} stroke={1.8} />;
+  const icon = isPending ? (
+    <span style={{ fontSize: "0.65rem", color: "var(--faint)" }}>
+      {cred.type.slice(0, 3)}
+    </span>
+  ) : isErr ? (
+    <IconAlertTriangle size={13} />
+  ) : (
+    <IconCpu size={13} stroke={1.8} />
+  );
 
   return (
     <ProofStep
@@ -1122,7 +1440,15 @@ function ProofStep({
   return (
     <div style={{ display: "flex", gap: "0.85rem", alignItems: "flex-start" }}>
       {/* left: connector */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 28, flexShrink: 0 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          width: 28,
+          flexShrink: 0,
+        }}
+      >
         <div
           style={{
             width: 28,
@@ -1132,12 +1458,19 @@ function ProofStep({
             placeItems: "center",
             flexShrink: 0,
             border: `1px solid ${
-              state === "done"   ? "var(--accent)" :
-              state === "active" ? "rgba(62,207,142,0.5)" :
-                                   "var(--border-strong)"
+              state === "done"
+                ? "var(--accent)"
+                : state === "active"
+                  ? "rgba(62,207,142,0.5)"
+                  : "var(--border-strong)"
             }`,
             background: state === "done" ? "var(--accent)" : "transparent",
-            color: state === "done" ? "var(--bg)" : state === "active" ? "var(--accent)" : "var(--faint)",
+            color:
+              state === "done"
+                ? "var(--bg)"
+                : state === "active"
+                  ? "var(--accent)"
+                  : "var(--faint)",
             transition: "all 0.35s var(--ease)",
           }}
         >
@@ -1165,8 +1498,17 @@ function ProofStep({
       </div>
 
       {/* right: text */}
-      <div style={{ paddingBottom: last ? 0 : "1.25rem", flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", paddingTop: "0.3rem" }}>
+      <div
+        style={{ paddingBottom: last ? 0 : "1.25rem", flex: 1, minWidth: 0 }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            paddingTop: "0.3rem",
+          }}
+        >
           <span
             style={{
               fontWeight: 600,
@@ -1193,7 +1535,13 @@ function ProofStep({
             </span>
           )}
         </div>
-        <div style={{ fontSize: "0.75rem", color: "var(--faint)", marginTop: "0.1rem" }}>
+        <div
+          style={{
+            fontSize: "0.75rem",
+            color: "var(--faint)",
+            marginTop: "0.1rem",
+          }}
+        >
           {subtitle}
         </div>
         {detail}
@@ -1204,10 +1552,19 @@ function ProofStep({
 
 // ── Small utilities ───────────────────────────────────────────────────────────
 
-function AnimatedDots({ text, style }: { text: string; style?: React.CSSProperties }) {
+function AnimatedDots({
+  text,
+  style,
+}: {
+  text: string;
+  style?: React.CSSProperties;
+}) {
   const [dots, setDots] = useState(".");
   useEffect(() => {
-    const id = setInterval(() => setDots((d) => d.length >= 3 ? "." : d + "."), 500);
+    const id = setInterval(
+      () => setDots((d) => (d.length >= 3 ? "." : d + ".")),
+      500,
+    );
     return () => clearInterval(id);
   }, []);
   return (
@@ -1233,7 +1590,8 @@ function ProvingBar() {
         style={{
           position: "absolute",
           inset: 0,
-          background: "linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%)",
+          background:
+            "linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%)",
           width: "50%",
           animation: "proving-shimmer 1.6s ease-in-out infinite",
         }}
