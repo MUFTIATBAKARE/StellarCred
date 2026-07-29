@@ -930,6 +930,9 @@ function BatchProofFlow({
   // even if the parent re-renders between proof generation and submission.
   const credsRef = useRef(creds);
   const holderRef = useRef(holder);
+  const networkMismatchRef = useRef<HTMLDivElement>(null);
+  const successRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     credsRef.current = creds;
   }, [creds]);
@@ -1029,7 +1032,6 @@ function BatchProofFlow({
         });
       }
     })();
-
     return () => {
       cancelled = true;
     };
@@ -1091,6 +1093,22 @@ function BatchProofFlow({
   const isConfirmed = batchStage === "confirmed";
   const isError = batchStage === "error";
 
+  useEffect(() => {
+  if (blockedByNetwork) {
+    networkMismatchRef.current?.focus();
+    return;
+  }
+
+  switch (batchStage) {
+    case "confirmed":
+      successRef.current?.focus();
+      break;
+
+    case "error":
+      errorRef.current?.focus();
+      break;
+  }
+  }, [blockedByNetwork, batchStage]);
   return (
     <div className="reveal" style={{ maxWidth: 560, margin: "0 auto" }}>
       <button
@@ -1181,7 +1199,7 @@ function BatchProofFlow({
 
         {/* Network mismatch — proofs are ready but submission is blocked */}
         {blockedByNetwork && (
-          <div style={{ marginTop: "1.5rem" }}>
+          <div  ref={networkMismatchRef} tabIndex={-1} role="status"style={{ marginTop: "1.5rem" }}>
             <NetworkMismatchBanner />
           </div>
         )}
@@ -1189,7 +1207,10 @@ function BatchProofFlow({
         {/* Error banner */}
         {isError && batchError && (
           <div
-            style={{
+          ref={errorRef}
+          tabIndex={-1}
+          role="alert"  
+          style={{
               marginTop: "1.5rem",
               padding: "0.9rem 1.1rem",
               borderRadius: "var(--radius)",
@@ -1263,6 +1284,9 @@ function BatchProofFlow({
         {isConfirmed && (
           <div
             className="reveal"
+            ref={successRef}
+            tabIndex={-1}
+            role="status"
             style={{
               marginTop: "1.5rem",
               padding: "1.25rem",
