@@ -413,6 +413,7 @@ function VerifyInner() {
               )}
               <div
                 className="stack"
+                role="radiogroup"
                 style={{
                   gap: "0.5rem",
                   marginTop: "0.5rem",
@@ -425,6 +426,8 @@ function VerifyInner() {
                   return (
                     <div
                       key={key}
+                      role="radio"
+                      aria-checked = {on}
                       tabIndex={locked ? -1 : 0}
                       onClick={() => {
                         if (!locked) setSelected(key);
