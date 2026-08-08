@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState, useMemo } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -8,15 +8,17 @@ import {
   IconCircle,
   IconSearch,
   IconFilter,
+  IconLoader2,
+  IconAlertCircle,
+  IconRefresh,
 } from "@tabler/icons-react";
 import { WalletButton } from "@/components/WalletButton";
-import { useWallet } from "@/lib/wallet-context";
+import { useWallet, usePreviewMode } from "@/lib/wallet-context";
 import { Badge } from "@/components/Badge";
 import { ConfigBanner } from "@/components/ConfigBanner";
-import { usePreviewMode } from "@/lib/wallet-context";
-import { checkClaim } from "@/lib/contracts";
 import { PROTOCOLS, type Protocol } from "@/lib/protocols";
 import { CREDENTIAL_TYPES } from "@/lib/stellar";
+import { useProtocolAccessCheck } from "@/lib/use-protocol-access";
 
 const CLAIM_LABELS: Record<string, string> = {
   kyc: "KYC",
@@ -29,54 +31,24 @@ const CLAIM_LABELS: Record<string, string> = {
 function ProtocolCard({
   protocol,
   activeWallet,
+  networkKey,
 }: {
   protocol: Protocol;
   activeWallet: string | null;
+  networkKey: string | boolean;
 }) {
   const router = useRouter();
-  const [statuses, setStatuses] = useState<boolean[]>(
-    protocol.requirements.map(() => false),
-  );
-  const [checked, setChecked] = useState(false);
-  const eligible = statuses.every(Boolean);
   const isPreview = usePreviewMode();
-
-  useEffect(() => {
-    if (isPreview) {
-      setChecked(true);
-      setStatuses(protocol.requirements.map(() => true));
-      return;
-    }
-    if (!activeWallet) {
-      setChecked(false);
-      setStatuses(protocol.requirements.map(() => false));
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const results = await Promise.all(
-          protocol.requirements.map((r) =>
-            checkClaim(activeWallet, r.type, r.minThreshold),
-          ),
-        );
-        if (!cancelled) setStatuses(results);
-      } catch {
-        // contracts not deployed
-      } finally {
-        if (!cancelled) setChecked(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [activeWallet, protocol.requirements]);
+  const { state, statuses, retry, checking } = useProtocolAccessCheck(
+    protocol.requirements,
+    activeWallet,
+    // Preview mode is "!address"; don't auto-grant when disconnected — show Connect wallet.
+    { isPreview: isPreview && Boolean(activeWallet), networkKey },
+  );
 
   return (
     <div
       className="card protocol-card"
-      role="link"
-      tabIndex={0}
       onClick={() => router.push(`/apps/${protocol.id}`)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -84,12 +56,10 @@ function ProtocolCard({
           router.push(`/apps/${protocol.id}`);
         }
       }}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 0,
-        cursor: "pointer",
-      }}
+      role="link"
+      tabIndex={0}
+      aria-label={`Open ${protocol.name} — ${protocol.tagline}`}
+      style={{ display: "flex", flexDirection: "column", gap: 0, cursor: "pointer" }}
     >
       <div className="between" style={{ marginBottom: "0.35rem" }}>
         <span
@@ -106,7 +76,7 @@ function ProtocolCard({
         </span>
         <div className="row" style={{ gap: "0.3rem" }}>
           {protocol.requirements.map((r, i) => {
-            const isClaimMet = checked && statuses[i];
+            const isClaimMet = state === "granted" || (state === "denied" && statuses[i]);
             return (
               <span
                 key={r.type}
@@ -121,7 +91,10 @@ function ProtocolCard({
                     ? "rgba(62,207,142,0.15)"
                     : "rgba(255,255,255,0.05)",
                   color: isClaimMet ? "var(--accent)" : "var(--faint)",
-                  border: `1px solid ${isClaimMet ? "rgba(62,207,142,0.35)" : "var(--border)"}`,
+                  border: `1px solid ${
+                    isClaimMet ? "rgba(62,207,142,0.35)" : "var(--border)"
+                  }`,
+                  opacity: checking ? 0.55 : 1,
                 }}
               >
                 {CLAIM_LABELS[r.type] || r.type}
@@ -130,20 +103,10 @@ function ProtocolCard({
           })}
         </div>
       </div>
-      <p
-        className="mono faint"
-        style={{ fontSize: "0.72rem", marginBottom: "0.75rem" }}
-      >
+      <p className="mono faint" style={{ fontSize: "0.72rem", marginBottom: "0.75rem" }}>
         {protocol.tagline}
       </p>
-      <p
-        className="muted"
-        style={{
-          fontSize: "0.8125rem",
-          lineHeight: 1.65,
-          marginBottom: "1.25rem",
-        }}
-      >
+      <p className="muted" style={{ fontSize: "0.8125rem", lineHeight: 1.65, marginBottom: "1.25rem" }}>
         {protocol.description}
       </p>
       <div
@@ -155,19 +118,10 @@ function ProtocolCard({
           marginBottom: "1.25rem",
         }}
       >
-        <div
-          className="faint"
-          style={{ fontSize: "0.72rem", marginBottom: "0.2rem" }}
-        >
+        <div className="faint" style={{ fontSize: "0.72rem", marginBottom: "0.2rem" }}>
           {protocol.stat.label}
         </div>
-        <div
-          style={{
-            fontWeight: 600,
-            fontSize: "1.5rem",
-            letterSpacing: "-0.03em",
-          }}
-        >
+        <div style={{ fontWeight: 600, fontSize: "1.5rem", letterSpacing: "-0.03em" }}>
           {protocol.stat.value}
         </div>
         <div className="mono faint" style={{ fontSize: "0.7rem" }}>
@@ -177,11 +131,15 @@ function ProtocolCard({
       <div className="eyebrow" style={{ marginBottom: "0.4rem" }}>
         Requirements
       </div>
-      <div className="stack">
+      <div className="stack" style={{ marginBottom: "1rem" }}>
         {protocol.requirements.map((r, i) => (
           <div className="line" key={r.label}>
             <span className="row" style={{ gap: "0.6rem" }}>
-              {statuses[i] ? (
+              {checking ? (
+                <IconLoader2 size={15} color="var(--faint)" className="spin" />
+              ) : state === "error" ? (
+                <IconAlertCircle size={15} color="var(--danger)" />
+              ) : statuses[i] ? (
                 <IconCheck size={15} color="var(--accent)" stroke={2.5} />
               ) : (
                 <IconCircle size={15} color="var(--faint)" />
@@ -189,13 +147,20 @@ function ProtocolCard({
               <span
                 style={{
                   fontSize: "0.875rem",
-                  color: statuses[i] ? "var(--text)" : "var(--muted)",
+                  color:
+                    !checking && state !== "error" && statuses[i]
+                      ? "var(--text)"
+                      : "var(--muted)",
                 }}
               >
                 {r.label}
               </span>
             </span>
-            {statuses[i] ? (
+            {checking ? (
+              <Badge variant="pending">Checking</Badge>
+            ) : state === "error" ? (
+              <Badge variant="denied">Unavailable</Badge>
+            ) : statuses[i] ? (
               <Badge variant="verified">Proved</Badge>
             ) : (
               <Badge variant="pending">Needed</Badge>
@@ -203,16 +168,79 @@ function ProtocolCard({
           </div>
         ))}
       </div>
+
+      {/* Per-card access outcome — never flash denied while a check is in flight */}
+      <div
+        className="between"
+        style={{
+          marginTop: "auto",
+          paddingTop: "0.75rem",
+          borderTop: "1px solid var(--border)",
+          minHeight: "1.75rem",
+        }}
+        onClick={(e) => {
+          // Keep retry/control clicks from navigating into the protocol.
+          if (state === "error") e.stopPropagation();
+        }}
+      >
+        {!activeWallet ? (
+          <span className="faint" style={{ fontSize: "0.75rem" }}>
+            Connect wallet to check access
+          </span>
+        ) : (
+          <>
+            {state === "loading" && (
+              <span className="row faint" style={{ gap: "0.4rem", fontSize: "0.75rem" }}>
+                <IconLoader2 size={14} className="spin" />
+                Checking access…
+              </span>
+            )}
+            {state === "granted" && <Badge variant="verified">Access granted</Badge>}
+            {state === "denied" && <Badge variant="denied">Access denied</Badge>}
+            {state === "error" && (
+              <>
+                <span className="row" style={{ gap: "0.4rem" }}>
+                  <Badge variant="denied">Check failed</Badge>
+                  <span className="faint" style={{ fontSize: "0.72rem" }}>
+                    RPC error
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    retry();
+                  }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.3rem",
+                    fontSize: "0.72rem",
+                    padding: "0.25rem 0.55rem",
+                  }}
+                >
+                  <IconRefresh size={12} stroke={2} />
+                  Retry
+                </button>
+              </>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
 function AppsInner() {
-  const { address, connect } = useWallet();
+  const { address, networkMismatch } = useWallet();
   const searchParams = useSearchParams();
   const scVerified = searchParams.get("sc_verified") === "true";
   const scWallet = searchParams.get("sc_wallet");
-  const activeWallet = address ?? scWallet ?? null;
+  // `address` is "" when disconnected — use || so we fall through to scWallet/null.
+  const activeWallet = address || scWallet || null;
+  // Include mismatch so a live network switch re-runs checks after debounce.
+  const networkKey = networkMismatch ? "mismatch" : "ok";
 
   const [search, setSearch] = useState("");
   const [selectedClaims, setSelectedClaims] = useState<Set<string>>(new Set());
@@ -262,16 +290,12 @@ function AppsInner() {
           lineHeight: 1.6,
         }}
       >
-        <strong style={{ color: "var(--text)" }}>
-          Any protocol, any claim.
-        </strong>{" "}
-        Each app below gates access on a different credential type — one
-        read-only call to{" "}
+        <strong style={{ color: "var(--text)" }}>Any protocol, any claim.</strong>{" "}
+        Each app below gates access on a different credential type — one read-only call to{" "}
         <span className="mono" style={{ fontSize: "0.75rem" }}>
           ProofRegistry.is_verified
         </span>
-        . The protocol never sees the credential, the commitment, or the proof
-        itself.
+        . The protocol never sees the credential, the commitment, or the proof itself.
       </div>
 
       {scVerified && (
@@ -293,16 +317,13 @@ function AppsInner() {
           <IconCheck size={18} color="var(--accent)" stroke={2.5} />
           <span>
             <strong>Verification complete.</strong>{" "}
-            <span className="muted">
-              You were returned here from StellarCred automatically.
-            </span>
+            <span className="muted">You were returned here from StellarCred automatically.</span>
           </span>
         </div>
       )}
 
       <ConfigBanner />
 
-      {/* Search and filter */}
       <div className="stack" style={{ gap: "0.75rem", marginBottom: "1.5rem" }}>
         <div style={{ position: "relative" }}>
           <IconSearch
@@ -318,6 +339,7 @@ function AppsInner() {
           />
           <input
             type="text"
+            aria-label="Search apps by name, description, or tagline"
             placeholder="Search apps by name, description, or tagline..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -347,9 +369,7 @@ function AppsInner() {
                   fontSize: "0.72rem",
                   fontWeight: 500,
                   border: `1px solid ${isActive ? "var(--accent)" : "var(--border)"}`,
-                  background: isActive
-                    ? "rgba(62,207,142,0.12)"
-                    : "transparent",
+                  background: isActive ? "rgba(62,207,142,0.12)" : "transparent",
                   color: isActive ? "var(--accent)" : "var(--muted)",
                   cursor: "pointer",
                   transition: "all 0.15s ease",
@@ -382,11 +402,7 @@ function AppsInner() {
       {filtered.length === 0 ? (
         <div
           className="card"
-          style={{
-            textAlign: "center",
-            padding: "3.5rem 1.5rem",
-            borderStyle: "dashed",
-          }}
+          style={{ textAlign: "center", padding: "3.5rem 1.5rem", borderStyle: "dashed" }}
         >
           <IconSearch size={30} stroke={1.3} color="var(--faint)" />
           <h3 style={{ margin: "1rem 0 0.4rem" }}>No apps match</h3>
@@ -395,12 +411,14 @@ function AppsInner() {
           </p>
         </div>
       ) : (
-        <div
-          className="grid grid-3"
-          style={{ alignItems: "start", gap: "1.25rem" }}
-        >
+        <div className="grid grid-3" style={{ alignItems: "start", gap: "1.25rem" }}>
           {filtered.map((p) => (
-            <ProtocolCard key={p.id} protocol={p} activeWallet={activeWallet} />
+            <ProtocolCard
+              key={p.id}
+              protocol={p}
+              activeWallet={activeWallet}
+              networkKey={networkKey}
+            />
           ))}
         </div>
       )}
@@ -418,8 +436,7 @@ function AppsInner() {
         <Link href="/holder" style={{ color: "var(--muted)" }}>
           Wallet
         </Link>{" "}
-        to generate proofs from your credentials, then return here to unlock
-        access.
+        to generate proofs from your credentials, then return here to unlock access.
       </p>
     </>
   );
